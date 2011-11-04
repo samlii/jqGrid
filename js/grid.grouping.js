@@ -95,7 +95,7 @@ $.jgrid.extend({
 			minus = grp.minusicon,
 			plus = grp.plusicon,
 			tar = $("#"+hid),
-			r = tar[0].nextSibling,
+			r = tar.length ? tar[0].nextSibling : null,
 			tarspan = $("#"+hid+" span."+"tree-wrap-"+$t.p.direction),
 			collapsed = false;
 			if( tarspan.hasClass(minus) ) {
@@ -219,6 +219,7 @@ $.jgrid.extend({
 			}
 			var grp = $t.p.groupingView;
 			$t.p.grouping = true;
+
 			//Set default, in case visibilityOnNextGrouping is undefined 
 			if (typeof grp.visibiltyOnNextGrouping == "undefined") {
 				grp.visibiltyOnNextGrouping = [];
@@ -227,13 +228,13 @@ $.jgrid.extend({
 			// show previous hidden groups if they are hidden and weren't removed yet
 			for(i=0;i<grp.groupField.length;i++) {
 				if(!grp.groupColumnShow[i] && grp.visibiltyOnNextGrouping[i]) {
-					$($t).jqGrid('showCol',grp.groupField[i]);
+				$($t).jqGrid('showCol',grp.groupField[i]);
 				}
 			}
 			// set visibility status of current group columns on next grouping
 			for(i=0;i<name.length;i++) {
 				grp.visibiltyOnNextGrouping[i] = $("#"+$t.p.id+"_"+name[i]).is(":visible");
-			} 
+			}
 			$t.p.groupingView = $.extend($t.p.groupingView, options || {});
 			grp.groupField = name;
 			$($t).trigger("reloadGrid");

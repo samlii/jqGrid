@@ -1720,16 +1720,24 @@ $.fn.jqGrid = function( pin ) {
 							if (pvis) { ts.grid.populateVisible(); }
 							if( ts.p.loadonce || ts.p.treeGrid) {ts.p.datatype = "local";}
 							data=null;
-							endReq();
+							if (npage === 1) { endReq(); }
 						},
 						error:function(xhr,st,err){
 							if($.isFunction(ts.p.loadError)) { ts.p.loadError.call(ts,xhr,st,err); }
-							endReq();
+							if (npage === 1) { endReq(); }
 							xhr=null;
 						},
-						beforeSend: function(xhr){
-							beginReq();
-							if($.isFunction(ts.p.loadBeforeSend)) { ts.p.loadBeforeSend.call(ts,xhr); }
+						beforeSend: function(xhr, settings ){
+							var gotoreq = true;
+							if($.isFunction(ts.p.loadBeforeSend)) {
+								gotoreq = ts.p.loadBeforeSend.call(ts,xhr, settings); 
+							}
+							if(gotoreq === undefined) { gotoreq = true; }
+							if(gotoreq === false) {
+								return false;
+							} else {
+								beginReq();
+							}
 						}
 					},$.jgrid.ajaxOptions, ts.p.ajaxGridOptions));
 				break;
@@ -2128,13 +2136,13 @@ $.fn.jqGrid = function( pin ) {
 				ts.p.selarrrow = [];
 				if (this.checked) {
 					$(ts.rows).each(function(i) {
-						if ( i>0 ) {
-							if(!$(this).hasClass("subgrid") && !$(this).hasClass("jqgroup") && !$(this).hasClass('ui-state-disabled')){
-								$("#jqg_"+$.jgrid.jqID(ts.p.id)+"_"+$.jgrid.jqID(this.id) )[ts.p.useProp ? 'prop': 'attr']("checked",true);
-								$(this).addClass("ui-state-highlight").attr("aria-selected","true");
-								ts.p.selarrrow.push(this.id);
-								ts.p.selrow = this.id;
-							}
+						if (i>0) {
+							if(!$(this).hasClass("ui-subgrid") && !$(this).hasClass("jqgroup") && !$(this).hasClass('ui-state-disabled')){
+							    $("#jqg_"+$.jgrid.jqID(ts.p.id)+"_"+$.jgrid.jqID(this.id) )[ts.p.useProp ? 'prop': 'attr']("checked",true);
+							    $(this).addClass("ui-state-highlight").attr("aria-selected","true");  
+							    ts.p.selarrrow.push(this.id);
+ 								ts.p.selrow = this.id;
+                            }
 						}
 					});
 					chk=true;
@@ -2143,7 +2151,7 @@ $.fn.jqGrid = function( pin ) {
 				else {
 					$(ts.rows).each(function(i) {
 						if(i>0) {
-							if(!$(this).hasClass("subgrid") && !$(this).hasClass('ui-state-disabled')){
+							if(!$(this).hasClass("ui-subgrid") && !$(this).hasClass('ui-state-disabled')){
 								$("#jqg_"+$.jgrid.jqID(ts.p.id)+"_"+$.jgrid.jqID(this.id) )[ts.p.useProp ? 'prop': 'attr']("checked", false);
 								$(this).removeClass("ui-state-highlight").attr("aria-selected","false");
 								emp.push(this.id);
@@ -2256,7 +2264,7 @@ $.fn.jqGrid = function( pin ) {
 		if( ts.p.cellEdit === false && ts.p.hoverrows === true) {
 		$(ts).bind('mouseover',function(e) {
 			ptr = $(e.target).closest("tr.jqgrow");
-			if($(ptr).attr("class") !== "subgrid") {
+			if($(ptr).attr("class") !== "ui-subgrid") {
 				$(ptr).addClass("ui-state-hover");
 			}
 		}).bind('mouseout',function(e) {
@@ -2548,7 +2556,7 @@ $.jgrid.extend({
 					scrGrid(ner);
 				}
 			}
-			if(!$t.p.multiselect) {
+			if(!$t.p.multiselect) {	
 				if(pt.className !== "ui-subgrid") {
 					if( $t.p.selrow != pt.id) {
 						$($t.rows.namedItem($t.p.selrow)).removeClass("ui-state-highlight").attr({"aria-selected":"false", "tabindex" : "-1"});
@@ -2561,6 +2569,8 @@ $.jgrid.extend({
 					if( $t.p.onSelectRow && onsr) { $t.p.onSelectRow.call($t, pt.id, stat); }
 				}
 			} else {
+				//unselect selectall checkbox when deselecting a specific row
+				$("#cb_" + $.jgrid.jqID($t.p.id), $t.grid.hDiv)[$t.p.useProp ? 'prop' : 'attr']("checked", false);
 				$t.p.selrow = pt.id;
 				ia = $.inArray($t.p.selrow,$t.p.selarrrow);
 				if (  ia === -1 ){
@@ -3027,6 +3037,9 @@ $.jgrid.extend({
 						lvc = i;
 					}
 				});
+
+				if (!lvc) { return; }
+			    
 				cr =0;
 				if (hs) {
 					if(nwidth-gw-(initwidth+brd*vc) !== scw){
