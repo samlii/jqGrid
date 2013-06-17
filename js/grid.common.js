@@ -50,7 +50,7 @@ $.extend($.jgrid,{
 		p = $.extend(true, {}, $.jgrid.jqModal || {}, p);
 		var mw  = document.createElement('div'), rtlsup, self = this;
 		css = $.extend({}, css || {});
-		rtlsup = $(p.gbox).attr("dir") == "rtl" ? true : false;
+		rtlsup = $(p.gbox).attr("dir") === "rtl" ? true : false;
 		mw.className= "ui-widget ui-widget-content ui-corner-all ui-jqdialog";
 		mw.id = aIDs.themodal;
 		var mh = document.createElement('div');
@@ -220,7 +220,7 @@ $.extend($.jgrid,{
 		cnt += "</div>";
 
 		try {
-			if($("#info_dialog").attr("aria-hidden") == "false") {
+			if($("#info_dialog").attr("aria-hidden") === "false") {
 				$.jgrid.hideModal("#info_dialog",{jqm:jm});
 			}
 			$("#info_dialog").remove();
@@ -241,7 +241,11 @@ $.extend($.jgrid,{
 			});
 		}
 		$("#closedialog", "#info_id").click(function(){
-			self.hideModal("#info_dialog",{jqm:jm});
+			self.hideModal("#info_dialog",{
+				jqm:jm,
+				onClose: $("#info_dialog").data("onClose") || mopt.onClose,
+				gb: $("#info_dialog").data("gbox") || mopt.gbox
+			});
 			return false;
 		});
 		$(".fm-button","#info_dialog").hover(
@@ -260,7 +264,8 @@ $.extend($.jgrid,{
 		if($.isFunction(mopt.afterOpen) ) { mopt.afterOpen(); }
 		try{ $("#info_dialog").focus();} catch (m){}
 	},
-	bindEv: function  (el, opt, $t) {
+	bindEv: function  (el, opt) {
+		var $t = this;
 		if($.isFunction(opt.dataInit)) {
 			opt.dataInit.call($t,el);
 		}
@@ -299,7 +304,7 @@ $.extend($.jgrid,{
 					if(!options.cols) { $(elem).css({width:"98%"});}
 				} else if (!options.cols) { options.cols = 20; }
 				if(!options.rows) { options.rows = 2; }
-				if(vl=='&nbsp;' || vl=='&#160;' || (vl.length==1 && vl.charCodeAt(0)==160)) {vl="";}
+				if(vl==='&nbsp;' || vl==='&#160;' || (vl.length===1 && vl.charCodeAt(0)===160)) {vl="";}
 				elem.value = vl;
 				setAttributes(elem, options);
 				$(elem).attr({"role":"textbox","multiline":"true"});
@@ -344,11 +349,9 @@ $.extend($.jgrid,{
 
 					if ($t.p && $t.p.idPrefix) {
 						rowid = $.jgrid.stripPref($t.p.idPrefix, rowid);
-					} else {
-						postData = undefined; // don't use postData for searching from jqFilter. One can implement the feature in the future if required.
 					}
 					$.ajax($.extend({
-						url: options.dataUrl,
+						url: $.isFunction(options.dataUrl) ? options.dataUrl.call($t, rowid, vl, String(options.name)) : options.dataUrl,
 						type : "GET",
 						dataType: "html",
 						data: $.isFunction(postData) ? postData.call($t, rowid, vl, String(options.name)) : postData,
@@ -363,7 +366,7 @@ $.extend($.jgrid,{
 							}
 							if(a) {
 								$(elem).append(a);
-								setAttributes(elem, options);
+								setAttributes(elem, options, postData ? ['postData'] : undefined );
 								if(options.size === undefined) { options.size =  msl ? 3 : 1;}
 								if(msl) {
 									ovm = vl.split(",");
@@ -410,7 +413,7 @@ $.extend($.jgrid,{
 							ov.setAttribute("role","option");
 							ov.value = sv[0]; ov.innerHTML = sv[1];
 							elem.appendChild(ov);
-							if (!msl &&  ($.trim(sv[0]) == $.trim(vl) || $.trim(sv[1]) == $.trim(vl))) { ov.selected ="selected"; }
+							if (!msl &&  ($.trim(sv[0]) === $.trim(vl) || $.trim(sv[1]) === $.trim(vl))) { ov.selected ="selected"; }
 							if (msl && ($.inArray($.trim(sv[1]), ovm)>-1 || $.inArray($.trim(sv[0]), ovm)>-1)) {ov.selected ="selected";}
 						}
 					} else if (typeof options.value === 'object') {
@@ -421,7 +424,7 @@ $.extend($.jgrid,{
 								ov.setAttribute("role","option");
 								ov.value = key; ov.innerHTML = oSv[key];
 								elem.appendChild(ov);
-								if (!msl &&  ( $.trim(key) == $.trim(vl) || $.trim(oSv[key]) == $.trim(vl)) ) { ov.selected ="selected"; }
+								if (!msl &&  ( $.trim(key) === $.trim(vl) || $.trim(oSv[key]) === $.trim(vl)) ) { ov.selected ="selected"; }
 								if (msl && ($.inArray($.trim(oSv[key]),ovm)>-1 || $.inArray($.trim(key),ovm)>-1)) { ov.selected ="selected"; }
 							}
 						}
@@ -433,13 +436,13 @@ $.extend($.jgrid,{
 			case "password" :
 			case "button" :
 				var role;
-				if(eltype=="button") { role = "button"; }
+				if(eltype==="button") { role = "button"; }
 				else { role = "textbox"; }
 				elem = document.createElement("input");
 				elem.type = eltype;
 				elem.value = vl;
 				setAttributes(elem, options);
-				if(eltype != "button"){
+				if(eltype !== "button"){
 					if(autowidth) {
 						if(!options.size) { $(elem).css({width:"98%"}); }
 					} else if (!options.size) { options.size = 20; }
@@ -467,8 +470,8 @@ $.extend($.jgrid,{
 						throw "e1";
 					}
 				} catch (e) {
-					if (e=="e1") { $.jgrid.info_dialog($.jgrid.errors.errcap,"function 'custom_element' "+$.jgrid.edit.msg.nodefined, $.jgrid.edit.bClose);}
-					if (e=="e2") { $.jgrid.info_dialog($.jgrid.errors.errcap,"function 'custom_element' "+$.jgrid.edit.msg.novalue,$.jgrid.edit.bClose);}
+					if (e==="e1") { $.jgrid.info_dialog($.jgrid.errors.errcap,"function 'custom_element' "+$.jgrid.edit.msg.nodefined, $.jgrid.edit.bClose);}
+					if (e==="e2") { $.jgrid.info_dialog($.jgrid.errors.errcap,"function 'custom_element' "+$.jgrid.edit.msg.novalue,$.jgrid.edit.bClose);}
 					else { $.jgrid.info_dialog($.jgrid.errors.errcap,typeof e==="string"?e:e.message,$.jgrid.edit.bClose); }
 				}
 			break;
@@ -482,55 +485,45 @@ $.extend($.jgrid,{
 		// EXCEPT for centurial years which are not also divisible by 400.
 			return (((year % 4 === 0) && ( year % 100 !== 0 || (year % 400 === 0))) ? 29 : 28 );
 		},
-		daysArray = function(n) {
-			var i;
-			for (i = 1; i <= n; i++) {
-				this[i] = 31;
-				if (i==4 || i==6 || i==9 || i==11) {this[i] = 30;}
-				if (i==2) {this[i] = 29;}
-			}
-			return this;
-		};
-
-		var tsp = {}, sep;
+		tsp = {}, sep;
 		format = format.toLowerCase();
 		//we search for /,-,. for the date separator
-		if(format.indexOf("/") != -1) {
+		if(format.indexOf("/") !== -1) {
 			sep = "/";
-		} else if(format.indexOf("-") != -1) {
+		} else if(format.indexOf("-") !== -1) {
 			sep = "-";
-		} else if(format.indexOf(".") != -1) {
+		} else if(format.indexOf(".") !== -1) {
 			sep = ".";
 		} else {
 			sep = "/";
 		}
 		format = format.split(sep);
 		date = date.split(sep);
-		if (date.length != 3) { return false; }
+		if (date.length !== 3) { return false; }
 		var j=-1,yln, dln=-1, mln=-1, i;
 		for(i=0;i<format.length;i++){
 			var dv =  isNaN(date[i]) ? 0 : parseInt(date[i],10);
 			tsp[format[i]] = dv;
 			yln = format[i];
-			if(yln.indexOf("y") != -1) { j=i; }
-			if(yln.indexOf("m") != -1) { mln=i; }
-			if(yln.indexOf("d") != -1) { dln=i; }
+			if(yln.indexOf("y") !== -1) { j=i; }
+			if(yln.indexOf("m") !== -1) { mln=i; }
+			if(yln.indexOf("d") !== -1) { dln=i; }
 		}
-		if (format[j] == "y" || format[j] == "yyyy") {
+		if (format[j] === "y" || format[j] === "yyyy") {
 			yln=4;
-		} else if(format[j] =="yy"){
+		} else if(format[j] ==="yy"){
 			yln = 2;
 		} else {
 			yln = -1;
 		}
-		var daysInMonth = daysArray(12),
+		var daysInMonth = [0,31,29,31,30,31,30,31,31,30,31,30,31],
 		strDate;
 		if (j === -1) {
 			return false;
 		}
 			strDate = tsp[format[j]].toString();
-			if(yln == 2 && strDate.length == 1) {yln = 1;}
-			if (strDate.length != yln || (tsp[format[j]]===0 && date[j]!="00")){
+			if(yln === 2 && strDate.length === 1) {yln = 1;}
+			if (strDate.length !== yln || (tsp[format[j]]===0 && date[j]!=="00")){
 				return false;
 			}
 		if(mln === -1) {
@@ -544,7 +537,7 @@ $.extend($.jgrid,{
 			return false;
 		}
 			strDate = tsp[format[dln]].toString();
-			if (strDate.length<1 || tsp[format[dln]]<1 || tsp[format[dln]]>31 || (tsp[format[mln]]==2 && tsp[format[dln]]>daysInFebruary(tsp[format[j]])) || tsp[format[dln]] > daysInMonth[tsp[format[mln]]]){
+			if (strDate.length<1 || tsp[format[dln]]<1 || tsp[format[dln]]>31 || (tsp[format[mln]]===2 && tsp[format[dln]]>daysInFebruary(tsp[format[j]])) || tsp[format[dln]] > daysInMonth[tsp[format[mln]]]){
 				return false;
 			}
 		return true;
@@ -577,27 +570,27 @@ $.extend($.jgrid,{
 		}
 		return true;
 	},
-	checkValues : function(val, valref,g, customobject, nam) {
-		var edtrul,i, nm, dft, len;
+	checkValues : function(val, valref, customobject, nam) {
+		var edtrul,i, nm, dft, len, g = this, cm = g.p.colModel;
 		if(customobject === undefined) {
 			if(typeof valref==='string'){
-				for( i =0, len=g.p.colModel.length;i<len; i++){
-					if(g.p.colModel[i].name===valref) {
-						edtrul = g.p.colModel[i].editrules;
+				for( i =0, len=cm.length;i<len; i++){
+					if(cm[i].name===valref) {
+						edtrul = cm[i].editrules;
 						valref = i;
-						try { nm = g.p.colModel[i].formoptions.label; } catch (e) {}
+						if(cm[i].formoptions != null) { nm = cm[i].formoptions.label; }
 						break;
 					}
 				}
 			} else if(valref >=0) {
-				edtrul = g.p.colModel[valref].editrules;
+				edtrul = cm[valref].editrules;
 			}
 		} else {
 			edtrul = customobject;
 			nm = nam===undefined ? "_" : nam;
 		}
 		if(edtrul) {
-			if(!nm) { nm = g.p.colNames[valref]; }
+			if(!nm) { nm = g.p.colNames != null ? g.p.colNames[valref] : cm[valref].label; }
 			if(edtrul.required === true) {
 				if( $.jgrid.isEmpty(val) )  { return [false,nm+": "+$.jgrid.edit.msg.required,""]; }
 			}
@@ -625,15 +618,18 @@ $.extend($.jgrid,{
 			if(edtrul.integer === true) {
 				if( !(rqfield === false && $.jgrid.isEmpty(val)) ) {
 					if(isNaN(val)) { return [false,nm+": "+$.jgrid.edit.msg.integer,""]; }
-					if ((val % 1 !== 0) || (val.indexOf('.') != -1)) { return [false,nm+": "+$.jgrid.edit.msg.integer,""];}
+					if ((val % 1 !== 0) || (val.indexOf('.') !== -1)) { return [false,nm+": "+$.jgrid.edit.msg.integer,""];}
 				}
 			}
 			if(edtrul.date === true) {
 				if( !(rqfield === false && $.jgrid.isEmpty(val)) ) {
-					if(g.p.colModel[valref].formatoptions && g.p.colModel[valref].formatoptions.newformat) {
-						dft = g.p.colModel[valref].formatoptions.newformat;
+					if(cm[valref].formatoptions && cm[valref].formatoptions.newformat) {
+						dft = cm[valref].formatoptions.newformat;
+						if( $.jgrid.formatter.date.masks.hasOwnProperty(dft) ) {
+							dft = $.jgrid.formatter.date.masks[dft];
+						}
 					} else {
-						dft = g.p.colModel[valref].datefmt || "Y-m-d";
+						dft = cm[valref].datefmt || "Y-m-d";
 					}
 					if(!$.jgrid.checkDate (dft, val)) { return [false,nm+": "+$.jgrid.edit.msg.date+" - "+dft,""]; }
 				}
